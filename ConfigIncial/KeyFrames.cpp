@@ -229,7 +229,7 @@ int main()
 
 	Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
-	Shader SkyBoxshader("Shaders/SkyBox.vs", "Shaders/SkyBox.frag");
+	Shader SkyBoxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 	
 	//models
 	Model DogBody((char*)"Models/DogBody.obj");
