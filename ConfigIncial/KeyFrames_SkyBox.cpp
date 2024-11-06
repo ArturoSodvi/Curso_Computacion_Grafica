@@ -229,8 +229,7 @@ int main()
 
 	Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
-	Shader skyboxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
-	
+	Shader SkyBoxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 	
 	//models
 	Model DogBody((char*)"Models/DogBody.obj");
@@ -258,6 +257,7 @@ int main()
 		KeyFrame[i].head = 0;
 		KeyFrame[i].headInc = 0;
 	}
+
 	GLfloat skyboxVertices[] = {
 		// Positions
 		-1.0f,  1.0f, -1.0f,
@@ -318,9 +318,6 @@ int main()
 	};
 
 
-
-
-
 	// First, set the container's VAO (and VBO)
 	GLuint VBO, VAO,EBO;
 	glGenVertexArrays(1, &VAO);
@@ -331,8 +328,10 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); 
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 
 	
 	// Position attribute
@@ -347,7 +346,7 @@ int main()
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.difuse"), 0);
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.specular"), 1);
 
-	//Skybox
+	//SkyBox
 	GLuint skyboxVBO, skyboxVAO;
 	glGenVertexArrays(1, &skyboxVAO);
 	glGenBuffers(1, &skyboxVBO);
@@ -357,8 +356,8 @@ int main()
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
-	//Load textures
-	vector < const GLchar*> faces;
+	// Load textures
+	vector<const GLchar*> faces;
 	faces.push_back("SkyBox/right.jpg");
 	faces.push_back("SkyBox/left.jpg");
 	faces.push_back("SkyBox/top.jpg");
@@ -367,11 +366,6 @@ int main()
 	faces.push_back("SkyBox/front.jpg");
 
 	GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
-
-
-
-
-
 	
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
@@ -557,31 +551,35 @@ int main()
 		
 		glBindVertexArray(0);
 
+		
+		// Draw skybox as last
+		glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
+		SkyBoxshader.Use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
+		glUniformMatrix4fv(glGetUniformLocation(SkyBoxshader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(SkyBoxshader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-		//Draw  SkyBox
-		glDepthFunc(GL_LEQUAL);
-		skyboxshader.Use();
-		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-		glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(skyboxshader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
+		// skybox cube
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
-		glDepthFunc(GL_LESS);
+		glDepthFunc(GL_LESS); // Set depth function back to default
 
-		
+
+
 		// Swap the screen buffers
 		glfwSwapBuffers(window);
 	}
 
+	
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteVertexArrays(1, &skyboxVAO);
-	glDeleteBuffers(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVBO);
+
 
 	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
